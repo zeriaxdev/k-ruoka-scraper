@@ -1,0 +1,24 @@
+{
+  "name": "kruoka",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot src/api/server.ts",
+    "start": "bun src/api/server.ts",
+    "cli": "bun src/cli/index.ts",
+    "scheduler": "bun src/jobs/scheduler.ts",
+    "mcp": "bun src/mcp/server.ts",
+    "mcp:http": "bun src/mcp/http.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  }
+}

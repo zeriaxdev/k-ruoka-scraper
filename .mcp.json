@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "kruoka": {
+      "command": "bun",
+      "args": ["src/mcp/server.ts"],
+      "cwd": "/Users/zeriax/src/scraping/kruoka"
+    }
+  }
+}
