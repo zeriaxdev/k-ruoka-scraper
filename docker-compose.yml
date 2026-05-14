@@ -1,24 +1,36 @@
 services:
   api:
-    build: .
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: ["bun", "run", "src/api/server.ts"]
     ports:
-      - "3000"
+      - "${PORT:-3002}:3002"
     environment:
+      - PORT=3002
       - REDIS_URL=${REDIS_DOCKER_URL:-redis://172.17.0.1:6379}
     restart: unless-stopped
 
   mcp:
-    build: .
-    command: ["bun", "src/mcp/http.ts"]
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: ["bun", "run", "src/mcp/http.ts"]
     ports:
-      - "3001"
+      - "${MCP_PORT:-3003}:3003"
     environment:
+      - MCP_PORT=3003
       - REDIS_URL=${REDIS_DOCKER_URL:-redis://172.17.0.1:6379}
     restart: unless-stopped
 
   scheduler:
-    build: .
-    command: ["bun", "src/jobs/scheduler.ts"]
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: ["bun", "run", "src/jobs/scheduler.ts"]
     environment:
       - REDIS_URL=${REDIS_DOCKER_URL:-redis://172.17.0.1:6379}
     restart: unless-stopped
