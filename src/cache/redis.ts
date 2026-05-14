@@ -1,5 +1,7 @@
-import { redis } from "bun";
+import { RedisClient } from "bun";
 import type { PriceSnapshot } from "../scraper";
+
+const redis = new RedisClient(process.env.REDIS_URL ?? "redis://localhost:6379");
 
 const KEY = {
   priceHistory: (id: string) => `kruoka:price:${id}`,
