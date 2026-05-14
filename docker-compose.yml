@@ -2,7 +2,7 @@ services:
   api:
     build: .
     ports:
-      - "${PORT:-3000}:3000"
+      - "3000"
     environment:
       - REDIS_URL=${REDIS_DOCKER_URL:-redis://172.17.0.1:6379}
     restart: unless-stopped
@@ -11,7 +11,7 @@ services:
     build: .
     command: ["bun", "src/mcp/http.ts"]
     ports:
-      - "${MCP_PORT:-3001}:3001"
+      - "3001"
     environment:
       - REDIS_URL=${REDIS_DOCKER_URL:-redis://172.17.0.1:6379}
     restart: unless-stopped
