@@ -39,3 +39,7 @@ dump.rdb
 # Editors
 .cursor
 .vscode
+
+# local agent state
+.claude/settings.local.json
+.impeccable/
