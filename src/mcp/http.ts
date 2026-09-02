@@ -209,6 +209,8 @@ Bun.serve({
       GET: handleMcp,
       DELETE: handleMcp,
     },
+    "/health": () => new Response("ok"),
+    "/": () => new Response("ok"),
   },
   fetch() {
     return new Response("Not found", { status: 404 });
