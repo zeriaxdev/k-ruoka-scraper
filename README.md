@@ -196,3 +196,22 @@ and other `4xx` are not retried, since a retry cannot change the outcome.
 If a deployment is being challenged, the fix is infrastructure — egress from a
 less-suspect IP, or arrange legitimate API access with Kesko. Defeating the
 challenge itself is out of scope for this repo.
+
+## Deploys
+
+Source is bind-mounted into the containers, so changing a file does **not**
+change the compose service definition — `docker compose up -d` reports
+`Running` and leaves the old container, still executing the code it loaded at
+startup, in place. New code silently never runs.
+
+Each service therefore takes `GIT_TAGS`, which DollarDeploy updates to the
+current commit on every deploy. The changed definition forces a recreate.
+
+To force one by hand on the host:
+
+```bash
+docker compose -p k-ruoka-scraper up -d --force-recreate
+```
+
+The health probe hits `/` by default (`APP_HEALTHCHECK_PATH`). Both the API and
+the MCP server answer `/` and `/health` with 200 without touching Redis.
