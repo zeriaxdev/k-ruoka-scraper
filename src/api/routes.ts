@@ -11,10 +11,21 @@ import {
 } from "../cache";
 
 export const routes = {
+  // Platform health probes hit "/" — answer without touching Redis so a
+  // degraded cache never reads as a dead app.
+  "/": () => new Response("ok"),
+  "/health": () => new Response("ok"),
+
   "/api/health": {
     async GET() {
       try {
-        await redis.ping();
+        // ponytail: a health check that hangs is worse than one that fails.
+        await Promise.race([
+          redis.ping(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("redis ping timed out")), 2000)
+          ),
+        ]);
         return Response.json({ status: "ok", redis: "connected" });
       } catch {
         return Response.json(
@@ -167,6 +178,7 @@ function errorResponse(err: unknown): Response {
 }
 
 for (const route of Object.values(routes)) {
+  if (typeof route === "function") continue; // bare handler, e.g. "/" probe
   for (const [method, handler] of Object.entries(route as Record<string, any>)) {
     (route as any)[method] = async (req: Request) => {
       try {
