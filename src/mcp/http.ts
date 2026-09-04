@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
-import { search, getById, getDetail } from "../scraper";
+import { search, getById, getDetail, compareBasket } from "../scraper";
 import {
   recordPrice,
   getPriceHistory,
@@ -145,6 +145,36 @@ DISPLAY: Show as a clean list of dated entries. Mark changes with ▲ or ▼ and
     async ({ id }) => {
       await untrackProduct(id);
       return { content: [{ type: "text" as const, text: `Stopped tracking ${id}` }] };
+    }
+  );
+  const COMPARE_FORMAT = `Compare a basket of grocery items. Resolves each item name via search, picks the cheapest available match, and returns per-item results plus a running total.
+
+DISPLAY: Render as a table of item -> matched product -> price, then a bold total.
+Call out any unmatched items at the end so the user can rename them.`;
+
+  server.tool(
+    "compare_basket",
+    COMPARE_FORMAT,
+    {
+      items: z
+        .array(z.string().min(1))
+        .min(1)
+        .max(50)
+        .describe("Grocery item names, e.g. ['maito', 'ruisleipä', 'kahvi']"),
+      limit: z.number().min(1).max(200).default(20).describe("Search results considered per item"),
+    },
+    async ({ items, limit }) => {
+      const result = await compareBasket(items, limit);
+
+      for (const { match } of result.items) {
+        if (match?.price != null) {
+          await recordPrice(match.id, match.price, match.unitPrice);
+        }
+      }
+
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
+      };
     }
   );
 
