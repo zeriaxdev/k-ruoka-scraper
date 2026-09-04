@@ -1,4 +1,4 @@
-import { search, getById, getDetail } from "../scraper";
+import { search, getById, getDetail, compareBasket, UpstreamError } from "../scraper";
 import {
   recordPrice,
   getPriceHistory,
@@ -106,6 +106,38 @@ export const routes = {
     },
   },
 
+  "/api/compare": {
+    async POST(req: Request) {
+      let body: any;
+      try {
+        body = await req.json();
+      } catch {
+        return Response.json({ error: "body must be JSON" }, { status: 400 });
+      }
+
+      const items = body?.items;
+      if (!Array.isArray(items) || items.length === 0 || !items.every((i) => typeof i === "string" && i.trim())) {
+        return Response.json(
+          { error: "body must be { items: string[] } with at least one non-empty name" },
+          { status: 400 }
+        );
+      }
+      if (items.length > 50) {
+        return Response.json({ error: "at most 50 items per basket" }, { status: 400 });
+      }
+
+      const result = await compareBasket(items.map((i: string) => i.trim()));
+
+      for (const { match } of result.items) {
+        if (match?.price != null) {
+          await recordPrice(match.id, match.price, match.unitPrice);
+        }
+      }
+
+      return Response.json(result);
+    },
+  },
+
   "/api/tracked": {
     async GET() {
       const ids = await getTrackedProducts();
@@ -113,3 +145,35 @@ export const routes = {
     },
   },
 } as Record<string, any>;
+
+/**
+ * Surface the real upstream failure instead of letting it escape as a bare 500.
+ * ponytail: wrapping the table beats a try/catch in every handler.
+ */
+function errorResponse(err: unknown): Response {
+  if (err instanceof UpstreamError) {
+    return Response.json(
+      {
+        error: err.message,
+        kind: err.kind,
+        upstreamStatus: err.status,
+        detail: err.detail,
+      },
+      { status: err.kind === "challenge" ? 503 : 502 }
+    );
+  }
+  console.error(err);
+  return Response.json({ error: (err as Error)?.message ?? "internal error" }, { status: 500 });
+}
+
+for (const route of Object.values(routes)) {
+  for (const [method, handler] of Object.entries(route as Record<string, any>)) {
+    (route as any)[method] = async (req: Request) => {
+      try {
+        return await handler(req);
+      } catch (err) {
+        return errorResponse(err);
+      }
+    };
+  }
+}
