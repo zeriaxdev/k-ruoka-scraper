@@ -6,7 +6,7 @@ const BASE_DETAIL = "https://www.k-ruoka.fi/kr-api/v4/products";
 const limiter = new RateLimiter(10, 2);
 
 // Pricing and availability are per-store.
-const STORE_ID = process.env.KRUOKA_STORE_ID ?? "N106";
+const STORE_ID = process.env.KRUOKA_STORE_ID ?? "K144"; // K-Market Pohjoinen Rautatiekatu
 
 const HEADERS = {
   accept: "application/json",

@@ -42,7 +42,7 @@ bun run start        # production
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
 | `REFRESH_INTERVAL_MS` | `3600000` | Scheduler refresh interval (ms) |
 | `KRUOKA_RAW_DUMP` | _(unset)_ | Directory to write raw upstream JSON to, for inspecting fields the mapper drops |
-| `KRUOKA_STORE_ID` | `N106` | K-Ruoka store code. Pricing and availability are per-store, so set this to the store you actually shop at. An invalid code fails fast with `unknown store id <code>`. |
+| `KRUOKA_STORE_ID` | `K144` | K-Ruoka store code (default: K-Market Pohjoinen Rautatiekatu). Pricing and availability are per-store. Look up other codes in the public store directory at `https://www.k-ruoka.fi/kr-api/stores`. An invalid code fails fast with `unknown store id <code>`. |
 
 ## CLI
 
