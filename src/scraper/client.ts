@@ -1,6 +1,5 @@
 import type { Product, ProductDetail, Promo } from "./types";
 import { RateLimiter } from "./rate-limit";
-import { getClearance, invalidateClearance } from "./flaresolverr";
 
 const BASE_SEARCH = "https://www.k-ruoka.fi/kr-api/v2/product-search";
 const BASE_DETAIL = "https://www.k-ruoka.fi/kr-api/v4/products";
@@ -78,29 +77,15 @@ async function dumpRaw(label: string, body: string) {
 }
 
 /** @internal exported for tests */
-export async function fetchJson(
-  url: string,
-  init: RequestInit,
-  label: string,
-): Promise<any> {
+export async function fetchJson(url: string, init: RequestInit, label: string): Promise<any> {
   let last: UpstreamError | undefined;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     await limiter.acquire();
 
-    let headers = HEADERS;
-    if (process.env.FLARESOLVERR_URL) {
-      const clearance = await getClearance();
-      headers = {
-        ...HEADERS,
-        cookie: clearance.cookie,
-        "user-agent": clearance.userAgent,
-      };
-    }
-
     let res: Response;
     try {
-      res = await fetch(url, { ...init, headers });
+      res = await fetch(url, { ...init, headers: HEADERS });
     } catch (err) {
       last = new UpstreamError(
         `Network error contacting K-Ruoka: ${(err as Error).message}`,
@@ -132,11 +117,6 @@ export async function fetchJson(
 
     const challenge = challengeInfo(res, body);
     if (challenge) {
-      if (process.env.FLARESOLVERR_URL && attempt < MAX_ATTEMPTS) {
-        invalidateClearance();
-        await backoff(attempt);
-        continue;
-      }
       throw new UpstreamError(
         `K-Ruoka is behind a Cloudflare bot challenge (HTTP ${res.status}, ${challenge}). ` +
           `The API is not reachable from this host — this is not a header or auth problem.`,
@@ -208,7 +188,7 @@ function mapProduct(item: any): Product {
     categorySlug: categoryTree.at(-1)?.slug,
     countryOfOrigin: origin?.countryOfOrigin,
     isDomestic: p.productAttributes?.responsibility?.some(
-      (r: any) => r.name === "domestic",
+      (r: any) => r.name === "domestic"
     ),
     image: attrs?.image?.url ?? p.images?.[0],
     url: `https://www.k-ruoka.fi/kauppa/tuote/${attrs?.urlSlug ?? p.id}`,
@@ -229,10 +209,10 @@ function mapDetail(data: any): ProductDetail {
   const allergens = attrs.localizedAllergens;
   const contacts = attrs.contactInformation?.fi ?? [];
   const manufacturer = contacts.find(
-    (c: any) => c.label === "Valmistaja",
+    (c: any) => c.label === "Valmistaja"
   )?.name;
   const labels = (p.productLabels?.responsibility?.labels ?? []).map(
-    (l: any) => l.name?.fi,
+    (l: any) => l.name?.fi
   );
 
   return {
@@ -252,7 +232,7 @@ function mapDetail(data: any): ProductDetail {
     categorySlug: categoryTree.at(-1)?.slug,
     countryOfOrigin: origin.countryOfOrigin,
     isDomestic: (attrs.responsibility ?? []).some(
-      (r: any) => r.name === "domestic",
+      (r: any) => r.name === "domestic"
     ),
     image: attrs.image?.url ?? p.images?.[0],
     url: `https://www.k-ruoka.fi/kauppa/tuote/${attrs.urlSlug ?? p.id}`,
@@ -307,9 +287,7 @@ export async function getById(id: string): Promise<Product | null> {
   return results.find((p) => p.id === id || p.ean === id) ?? null;
 }
 
-export async function getDetail(
-  slugOrId: string,
-): Promise<ProductDetail | null> {
+export async function getDetail(slugOrId: string): Promise<ProductDetail | null> {
   const url = `${BASE_DETAIL}/${slugOrId}?storeId=${STORE_ID}&returnLocalProductsFromOtherStores=true`;
 
   try {
