@@ -36,7 +36,8 @@ export type Product = {
   promo?: Promo;
   unitPrice?: number;
   unit?: string;
-  soldBy?: "piece" | "weight";
+  /** "approximatePiece" prices one average item; `unitPrice` is the real €/kg. */
+  soldBy?: "piece" | "weight" | "approximatePiece";
   size?: number;
   sizeUnit?: string;
   categoryPath?: string[];
