@@ -18,25 +18,44 @@ export type CompareResult = {
   unmatched: string[];
 };
 
-/** Cheapest in-stock product by the price actually charged today. */
-export function cheapest(products: Product[]): Product | null {
+/** "relevance" keeps K-Ruoka's own result order, which is what a shopper means. */
+export type SortBy = "relevance" | "price" | "unitPrice";
+
+/** Best in-stock match under the chosen ordering. Null when nothing qualifies. */
+export function pick(
+  products: Product[],
+  sort: SortBy = "relevance",
+): Product | null {
   const usable = products.filter(
     (p) => typeof p.effectivePrice === "number" && p.isAvailable !== false,
   );
   if (usable.length === 0) return null;
+
+  if (sort === "relevance") return usable[0]!;
+  if (sort === "unitPrice") {
+    return usable.reduce((a, b) =>
+      (b.unitPrice ?? Infinity) < (a.unitPrice ?? Infinity) ? b : a,
+    );
+  }
   return usable.reduce((a, b) => (b.effectivePrice < a.effectivePrice ? b : a));
+}
+
+/** Cheapest in-stock product by the price actually charged today. */
+export function cheapest(products: Product[]): Product | null {
+  return pick(products, "price");
 }
 
 /** `searchFn` is injectable so this is testable without upstream access. */
 export async function compareBasket(
   items: string[],
   limit = 20,
+  sort: SortBy = "relevance",
   searchFn: (q: string, n: number) => Promise<Product[]> = liveSearch,
 ): Promise<CompareResult> {
   const matches: CompareMatch[] = await Promise.all(
     items.map(async (query) => {
       try {
-        const match = cheapest(await searchFn(query, limit));
+        const match = pick(await searchFn(query, limit), sort);
         return match
           ? { query, match }
           : { query, match: null, error: "no priced, available result" };

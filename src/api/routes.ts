@@ -135,7 +135,19 @@ export const routes = {
         return Response.json({ error: "at most 50 items per basket" }, { status: 400 });
       }
 
-      const result = await compareBasket(items.map((i: string) => i.trim()));
+      const sort = body?.sort ?? "relevance";
+      if (!["relevance", "price", "unitPrice"].includes(sort)) {
+        return Response.json(
+          { error: 'sort must be "relevance", "price" or "unitPrice"' },
+          { status: 400 }
+        );
+      }
+
+      const result = await compareBasket(
+        items.map((i: string) => i.trim()),
+        20,
+        sort
+      );
 
       for (const { match } of result.items) {
         if (match?.price != null) {

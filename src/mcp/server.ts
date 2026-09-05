@@ -190,9 +190,15 @@ server.tool(
       .max(50)
       .describe("Grocery item names, e.g. ['maito', 'ruisleipä', 'kahvi']"),
     limit: z.number().min(1).max(200).default(20).describe("Search results considered per item"),
+    sort: z
+      .enum(["relevance", "price", "unitPrice"])
+      .default("relevance")
+      .describe(
+        "relevance = K-Ruoka's own ranking (what a shopper means); price = cheapest; unitPrice = best value per kg/l"
+      ),
   },
-  async ({ items, limit }) => {
-    const result = await compareBasket(items, limit);
+  async ({ items, limit, sort }) => {
+    const result = await compareBasket(items, limit, sort);
 
     for (const { match } of result.items) {
       if (match?.price != null) {

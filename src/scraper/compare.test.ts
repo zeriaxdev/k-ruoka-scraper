@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { cheapest, compareBasket } from "./compare";
+import { cheapest, pick, compareBasket } from "./compare";
 import type { Product } from "./types";
 
 const p = (id: string, price: number, extra: Partial<Product> = {}): Product =>
@@ -18,7 +18,7 @@ test("cheapest skips unavailable and unpriced items", () => {
 test("cheapest and totals use the promo price, not the shelf price", async () => {
   expect(cheapest([p("plain", 2.0), onOffer("deal", 2.5, 1.5)])?.id).toBe("deal");
 
-  const r = await compareBasket(["x"], 20, async () => [onOffer("deal", 2.5, 1.5)]);
+  const r = await compareBasket(["x"], 20, "price", async () => [onOffer("deal", 2.5, 1.5)]);
   expect(r.total).toBe(1.5);
   expect(r.savings).toBe(1);
 });
@@ -27,7 +27,7 @@ test("compareBasket totals cheapest matches and reports misses", async () => {
   const fake = async (q: string) =>
     q === "maito" ? [p("m1", 1.29), p("m2", 0.99)] : q === "leipä" ? [p("l1", 2.5)] : [];
 
-  const r = await compareBasket(["maito", "leipä", "kaviaari"], 20, fake);
+  const r = await compareBasket(["maito", "leipä", "kaviaari"], 20, "price", fake);
   expect(r.total).toBe(3.49);
   expect(r.matched).toBe(2);
   expect(r.unmatched).toEqual(["kaviaari"]);
@@ -38,7 +38,22 @@ test("compareBasket isolates a failing item instead of failing the basket", asyn
     if (q === "boom") throw new Error("HTTP 403");
     return [p("x", 1)];
   };
-  const r = await compareBasket(["ok", "boom"], 20, fake);
+  const r = await compareBasket(["ok", "boom"], 20, "price", fake);
   expect(r.total).toBe(1);
   expect(r.items[1]!.error).toBe("HTTP 403");
+});
+
+test("relevance keeps upstream order; price and unitPrice re-rank", async () => {
+  const results = [
+    p("first", 9.0, { unitPrice: 30 }),
+    p("cheap", 1.0, { unitPrice: 40 }),
+    p("value", 5.0, { unitPrice: 2 }),
+  ];
+  expect(pick(results)!.id).toBe("first");
+  expect(pick(results, "price")!.id).toBe("cheap");
+  expect(pick(results, "unitPrice")!.id).toBe("value");
+  expect(pick([], "price")).toBeNull();
+
+  const r = await compareBasket(["x"], 20, "relevance", async () => results);
+  expect(r.items[0]!.match!.id).toBe("first");
 });
