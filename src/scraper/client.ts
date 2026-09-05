@@ -5,6 +5,12 @@ const BASE_SEARCH = "https://www.k-ruoka.fi/kr-api/v2/product-search";
 const BASE_DETAIL = "https://www.k-ruoka.fi/kr-api/v4/products";
 const limiter = new RateLimiter(10, 2);
 
+// Pricing and availability are per-store. N106 is a real K-Ruoka store code —
+// override it to make results accurate for the store you actually shop at.
+// Find a code from the store's page on k-ruoka.fi (its network requests carry
+// the storeId).
+const STORE_ID = process.env.KRUOKA_STORE_ID ?? "N106";
+
 const HEADERS = {
   accept: "application/json",
   "accept-language": "fi-FI,fi;q=0.9,en;q=0.8",
@@ -270,7 +276,7 @@ function mapDetail(data: any): ProductDetail {
 export async function search(query: string, limit = 50): Promise<Product[]> {
   const url =
     `${BASE_SEARCH}/${encodeURIComponent(query)}` +
-    `?storeId=N106&offset=0&limit=${limit}`;
+    `?storeId=${STORE_ID}&offset=0&limit=${limit}`;
 
   const json = await fetchJson(url, { method: "POST" }, `search-${query}`);
   return json.result.map(mapProduct);
@@ -282,7 +288,7 @@ export async function getById(id: string): Promise<Product | null> {
 }
 
 export async function getDetail(slugOrId: string): Promise<ProductDetail | null> {
-  const url = `${BASE_DETAIL}/${slugOrId}?storeId=N106&returnLocalProductsFromOtherStores=true`;
+  const url = `${BASE_DETAIL}/${slugOrId}?storeId=${STORE_ID}&returnLocalProductsFromOtherStores=true`;
 
   try {
     const json = await fetchJson(url, {}, `detail-${slugOrId}`);
