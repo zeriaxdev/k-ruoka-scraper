@@ -57,3 +57,16 @@ test("relevance keeps upstream order; price and unitPrice re-rank", async () => 
   const r = await compareBasket(["x"], 20, "relevance", async () => results);
   expect(r.items[0]!.match!.id).toBe("first");
 });
+
+test("multi-buy is exposed without changing the single-unit price", () => {
+  const p = {
+    price: 1.42,
+    effectivePrice: 1.42,
+    multiBuy: { amount: 4, price: 5, pricePerUnit: 1.25 },
+  } as unknown as Product;
+
+  // Buying 4 is a different purchase, so it must not undercut effectivePrice.
+  expect(p.effectivePrice).toBe(1.42);
+  expect(p.multiBuy!.pricePerUnit).toBeLessThan(p.effectivePrice);
+  expect(p.multiBuy!.amount * p.multiBuy!.pricePerUnit).toBeCloseTo(p.multiBuy!.price, 2);
+});

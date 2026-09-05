@@ -24,6 +24,28 @@ export type Promo = {
   lowestPriceBeforeDiscount?: number;
 };
 
+/**
+ * Multi-buy offer from `pricing.batch`, e.g. "4 kpl 5,00 €". Independent of
+ * `promo`: a product can have either, both or neither.
+ */
+export type MultiBuy = {
+  /** Units you must buy to get `price`. */
+  amount: number;
+  /** Total for `amount` units. */
+  price: number;
+  /** `price / amount`, for comparing against the single-unit price. */
+  pricePerUnit: number;
+  discountPercentage?: number;
+  discountText?: string;
+  /** "STANDARD" or "PLUSSA" (loyalty-card only). */
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+  daysLeft?: number;
+  campaignId?: string;
+  availability?: { web?: boolean; store?: boolean };
+};
+
 export type Product = {
   id: string;
   ean?: string;
@@ -34,6 +56,7 @@ export type Product = {
   /** Price actually charged today: promo price when on offer, else `price`. */
   effectivePrice: number;
   promo?: Promo;
+  multiBuy?: MultiBuy;
   unitPrice?: number;
   unit?: string;
   /** "approximatePiece" prices one average item; `unitPrice` is the real €/kg. */

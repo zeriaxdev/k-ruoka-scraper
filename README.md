@@ -161,15 +161,26 @@ price when on offer, otherwise the shelf `price`). Search and comparison rank by
 }
 ```
 
-**Multi-buy promos are not available from this endpoint.** A sweep of 93
-discounted products across 12 search queries found only `STANDARD` and `PLUSSA`
-discount types, and no quantity-threshold field anywhere in the payload —
-nothing expressing "4 kpl 5,00 €". `maxItems` is a cap on how many units get the
-discount, not a required quantity. To confirm this yourself on fresh data:
+**Multi-buy offers live in `pricing.batch`**, a sibling of `normal` and
+`discount` — not inside `discount`. They are mapped to `multiBuy`:
 
-```bash
-KRUOKA_RAW_DUMP=./raw bun run cli search kahvi
+```jsonc
+"price": 1.42,
+"multiBuy": {
+  "amount": 4,          // buy this many...
+  "price": 5,           // ...for this total
+  "pricePerUnit": 1.25,
+  "discountText": "−11 %",
+  "type": "PLUSSA",
+  "endDate": "2026-09-27T20:59:59.000Z",
+  "daysLeft": 23
+}
 ```
+
+`multiBuy` deliberately does not affect `effectivePrice`, since buying four of
+something is a different purchase from buying one. In a sample of 1049 products,
+150 had `batch` pricing and only 63 had a plain `discount` — multi-buy is the
+more common offer type, so do not treat `discount` as the whole picture.
 
 ## Upstream 403s
 

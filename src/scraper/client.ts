@@ -1,4 +1,4 @@
-import type { Product, ProductDetail, Promo } from "./types";
+import type { Product, ProductDetail, Promo, MultiBuy } from "./types";
 import { RateLimiter } from "./rate-limit";
 
 const BASE_SEARCH = "https://www.k-ruoka.fi/kr-api/v2/product-search";
@@ -151,10 +151,30 @@ function mapPromo(pricing: any, mobilescan: any): Promo | undefined {
   };
 }
 
+/** `pricing.batch` is a sibling of `normal`/`discount`, not nested inside them. */
+function mapMultiBuy(pricing: any): MultiBuy | undefined {
+  const b = pricing?.batch;
+  if (!b || b.price == null || !b.amount) return undefined;
+  return {
+    amount: b.amount,
+    price: b.price,
+    pricePerUnit: Math.round((b.price / b.amount) * 100) / 100,
+    discountPercentage: b.discountPercentage,
+    discountText: b.discountPercentageText,
+    type: b.discountType,
+    startDate: b.startDate,
+    endDate: b.endDate,
+    daysLeft: b.validNumberOfDaysLeft,
+    campaignId: b.campaignId,
+    availability: b.discountAvailability,
+  };
+}
+
 function mapProduct(item: any): Product {
   const p = item.product;
   const pricing = p.mobilescan?.pricing?.normal;
   const promo = mapPromo(p.mobilescan?.pricing, p.mobilescan);
+  const multiBuy = mapMultiBuy(p.mobilescan?.pricing);
   const attrs = p.productAttributes;
   const measurements = attrs?.measurements;
   const origin = attrs?.origin;
@@ -168,6 +188,7 @@ function mapProduct(item: any): Product {
     price: pricing?.price,
     effectivePrice: promo?.price ?? pricing?.price,
     promo,
+    multiBuy,
     unitPrice: pricing?.unitPrice?.value,
     unit: pricing?.unitPrice?.unit,
     soldBy: pricing?.soldBy?.kind,
@@ -190,6 +211,7 @@ function mapDetail(data: any): ProductDetail {
   const p = data.product;
   const pricing = p.mobilescan?.pricing?.normal;
   const promo = mapPromo(p.mobilescan?.pricing, p.mobilescan);
+  const multiBuy = mapMultiBuy(p.mobilescan?.pricing);
   const attrs = p.productAttributes ?? {};
   const measurements = attrs.measurements ?? {};
   const origin = attrs.origin ?? {};
@@ -212,6 +234,7 @@ function mapDetail(data: any): ProductDetail {
     price: pricing?.price,
     effectivePrice: promo?.price ?? pricing?.price,
     promo,
+    multiBuy,
     unitPrice: pricing?.unitPrice?.value,
     unit: pricing?.unitPrice?.unit,
     soldBy: pricing?.soldBy?.kind,
