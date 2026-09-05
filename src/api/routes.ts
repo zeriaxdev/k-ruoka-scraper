@@ -11,15 +11,13 @@ import {
 } from "../cache";
 
 export const routes = {
-  // Platform health probes hit "/" — answer without touching Redis so a
-  // degraded cache never reads as a dead app.
+  // Probes hit "/" — answer without Redis so a degraded cache isn't a dead app.
   "/": () => new Response("ok"),
   "/health": () => new Response("ok"),
 
   "/api/health": {
     async GET() {
       try {
-        // ponytail: a health check that hangs is worse than one that fails.
         await Promise.race([
           redis.ping(),
           new Promise((_, reject) =>
@@ -157,10 +155,7 @@ export const routes = {
   },
 } as Record<string, any>;
 
-/**
- * Surface the real upstream failure instead of letting it escape as a bare 500.
- * ponytail: wrapping the table beats a try/catch in every handler.
- */
+/** Surface the real upstream failure instead of a bare 500. */
 function errorResponse(err: unknown): Response {
   if (err instanceof UpstreamError) {
     return Response.json(

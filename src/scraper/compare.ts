@@ -18,10 +18,7 @@ export type CompareResult = {
   unmatched: string[];
 };
 
-/**
- * Cheapest in-stock product by the price actually charged today — a product
- * on offer competes at its promo price. Null when nothing qualifies.
- */
+/** Cheapest in-stock product by the price actually charged today. */
 export function cheapest(products: Product[]): Product | null {
   const usable = products.filter(
     (p) => typeof p.effectivePrice === "number" && p.isAvailable !== false,
@@ -30,10 +27,7 @@ export function cheapest(products: Product[]): Product | null {
   return usable.reduce((a, b) => (b.effectivePrice < a.effectivePrice ? b : a));
 }
 
-/**
- * Resolve each basket item by search, keep the cheapest hit, and total them up.
- * `searchFn` is injectable so the logic is testable without upstream access.
- */
+/** `searchFn` is injectable so this is testable without upstream access. */
 export async function compareBasket(
   items: string[],
   limit = 20,
@@ -55,7 +49,6 @@ export async function compareBasket(
   const found = matches.filter((m) => m.match);
   return {
     items: matches,
-    // ponytail: cents rounding — basket totals are small, no money type needed.
     savings:
       Math.round(
         found.reduce((s, m) => s + (m.match!.price - m.match!.effectivePrice), 0) * 100,

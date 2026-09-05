@@ -5,10 +5,7 @@ const BASE_SEARCH = "https://www.k-ruoka.fi/kr-api/v2/product-search";
 const BASE_DETAIL = "https://www.k-ruoka.fi/kr-api/v4/products";
 const limiter = new RateLimiter(10, 2);
 
-// Pricing and availability are per-store. N106 is a real K-Ruoka store code —
-// override it to make results accurate for the store you actually shop at.
-// Find a code from the store's page on k-ruoka.fi (its network requests carry
-// the storeId).
+// Pricing and availability are per-store.
 const STORE_ID = process.env.KRUOKA_STORE_ID ?? "N106";
 
 const HEADERS = {
@@ -24,7 +21,7 @@ const HEADERS = {
 
 const MAX_ATTEMPTS = 3;
 
-/** Error carrying the *real* upstream failure, instead of a bare 403. */
+/** Carries the real upstream failure, instead of a bare 403. */
 export class UpstreamError extends Error {
   constructor(
     message: string,
@@ -37,13 +34,7 @@ export class UpstreamError extends Error {
   }
 }
 
-/**
- * K-Ruoka sits behind Cloudflare. When Cloudflare decides to challenge the
- * caller it answers *every* path (including the homepage) with 403 +
- * `cf-mitigated: challenge` and a "Just a moment..." interstitial. No
- * combination of request headers clears it — it wants a browser to run the
- * JS challenge. Detect it so callers get a truthful diagnosis.
- */
+/** Cloudflare answers every path with 403 + an interstitial when it challenges. */
 function challengeInfo(res: Response, body: string): string | null {
   if (res.headers.get("cf-mitigated") === "challenge") {
     return `cf-ray ${res.headers.get("cf-ray") ?? "unknown"}`;
@@ -54,9 +45,7 @@ function challengeInfo(res: Response, body: string): string | null {
   return null;
 }
 
-// ponytail: retry only what a retry can fix — throttling, upstream 5xx and
-// transport blips. A Cloudflare challenge and a 4xx are deterministic, so
-// retrying them just hammers the origin.
+// Only what a retry can fix; a challenge and a 4xx are deterministic.
 function isRetryable(status: number) {
   return status === 429 || status >= 500;
 }
@@ -66,7 +55,7 @@ async function backoff(attempt: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
 
-/** Optional raw-payload capture: KRUOKA_RAW_DUMP=/some/dir bun run ... */
+/** KRUOKA_RAW_DUMP=/some/dir to capture raw payloads. */
 async function dumpRaw(label: string, body: string) {
   const dir = process.env.KRUOKA_RAW_DUMP;
   if (!dir) return;
